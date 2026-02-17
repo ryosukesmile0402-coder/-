@@ -11,7 +11,7 @@
         #app { height: 100dvh; width: 100%; display: flex; flex-direction: column; }
         .glass-card { background: rgba(255, 255, 255, 0.9); border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .btn-primary { background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: white; font-weight: bold; }
-        .choice-btn { background: white; border: 2px solid #e2e8f0; text-align: left; padding: 1.25rem; border-radius: 1.25rem; font-weight: bold; color: #334155; width: 100%; transition: all 0.2s; }
+        .choice-btn { background: white; border: 2px solid #e2e8f0; text-align: left; padding: 1.25rem; border-radius: 1.25rem; font-weight: bold; color: #334155; width: 100%; }
         .ans-correct { background-color: #10b981 !important; color: white !important; border-color: #10b981 !important; }
         .ans-wrong { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -21,6 +21,7 @@
 <div id="app" class="max-w-md mx-auto"></div>
 
 <script type="module">
+// Firebaseの設定
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -36,7 +37,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// --- 2027語データ ---
+// --- データ管理 ---
 window.wordData = [
   {id:1, en:"～に従う", ja:"follow"},
 {id:2, en:"～を考慮する", ja:"consider"},
@@ -2038,15 +2039,16 @@ window.wordData = [
 {id:1998, en:"やさしい", ja:"tender"},
 {id:1999, en:"憤慨している", ja:"outraged"},
 {id:2000, en:"本来の", ja:"intrinsic"},
+    // ★ ここに [{id:4, en:"...", ja:"..."}, ...] の形式で全データを貼り付け
 ];
 
 const ADMIN_PASS = "Henly0402";
 let state = { view: 'loading', currentUser: null, users: [], quiz: null, quizType: null };
 const root = document.getElementById('app');
 
-// --- 全ての関数を window に登録して確実に呼び出せるようにする ---
+// --- 全ての関数を window に登録して HTML から呼べるようにする ---
 
-window.nav = (v, type = null) => {
+window.setView = (v, type = null) => {
     state.view = v;
     if (type) state.quizType = type;
     render();
@@ -2054,58 +2056,64 @@ window.nav = (v, type = null) => {
 
 window.adminLogin = () => {
     const p = prompt("管理者パスワード");
-    if (p === ADMIN_PASS) window.nav('admin');
-    else if (p) alert("不一致");
+    if (p === ADMIN_PASS) window.setView('admin');
+    else if (p) alert("パスワードが違います");
 };
 
-window.login = () => {
+window.doLogin = () => {
     const id = document.getElementById('uID').value;
     const pw = document.getElementById('uPW').value;
-    const u = state.users.find(x => x.id === id && x.pass === pw);
-    if (u) { state.currentUser = u; window.nav('home'); }
-    else { alert("ID/Passが違います"); }
+    const user = state.users.find(u => u.id === id && u.pass === pw);
+    if (user) {
+        state.currentUser = user;
+        window.setView('home');
+    } else {
+        alert("IDまたはパスワードが正しくありません");
+    }
 };
 
 window.startQuiz = (min, max) => {
     const pool = window.wordData.filter(w => w.id >= min && w.id <= max);
-    if (pool.length === 0) return alert("データなし");
+    if (pool.length === 0) return alert("範囲内に単語データがありません");
 
+    // ランダムに20問抽出
     const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 20);
     const questions = shuffled.map(item => {
-        let choices = [item.ja]; // 答え（日本語）をセット
+        let choices = [item.ja]; // 答え（日本語）を最初に入れる
         while (choices.length < 4) {
-            const r = window.wordData[Math.floor(Math.random() * window.wordData.length)].ja;
-            if (!choices.includes(r)) choices.push(r);
+            const rand = window.wordData[Math.floor(Math.random() * window.wordData.length)].ja;
+            if (!choices.includes(rand)) choices.push(rand);
         }
         return {
             id: item.id,
-            question: item.en, // 英語の問題
-            answer: item.ja,   // 日本語の正解
-            choices: choices.sort(() => Math.random() - 0.5)
+            qText: item.en, // 問題：英語
+            aText: item.ja, // 正解：日本語
+            choices: choices.sort(() => Math.random() - 0.5) // 4択をシャッフル
         };
     });
 
     state.quiz = { questions, curr: 0, score: 0 };
-    window.nav('quiz');
+    window.setView('quiz');
 };
 
-window.checkAns = async (idx) => {
+window.checkAnswer = async (selectedIdx) => {
     const q = state.quiz.questions[state.quiz.curr];
-    const isCorrect = (q.choices[idx] === q.answer);
+    const isCorrect = (q.choices[selectedIdx] === q.aText);
     
     if (isCorrect) {
         state.quiz.score++;
         if (state.quizType === 'Master') {
             state.currentUser.progress++;
-            try { await setDoc(doc(db, "users", state.currentUser.id), state.currentUser); } catch(e){}
+            await setDoc(doc(db, "users", state.currentUser.id), state.currentUser);
         }
     }
 
+    // ボタンに色をつける
     const btns = document.querySelectorAll('.choice-btn');
-    btns.forEach((b, i) => {
-        if (i === idx) b.classList.add(isCorrect ? 'ans-correct' : 'ans-wrong');
-        if (q.choices[i] === q.answer) b.classList.add('ans-correct');
-        b.onclick = null;
+    btns.forEach((btn, i) => {
+        btn.onclick = null; // 連続押し防止
+        if (i === selectedIdx) btn.classList.add(isCorrect ? 'ans-correct' : 'ans-wrong');
+        if (q.choices[i] === q.aText) btn.classList.add('ans-correct');
     });
 
     setTimeout(() => {
@@ -2113,26 +2121,26 @@ window.checkAns = async (idx) => {
             state.quiz.curr++;
             render();
         } else {
-            window.nav('result');
+            window.setView('result');
         }
     }, 800);
 };
 
-// --- 画面描画ロジック ---
+// --- 画面表示 ---
 function render() {
     if (state.view === 'loading') {
-        root.innerHTML = `<div class="h-full flex items-center justify-center text-sky-500 font-black">LOADING...</div>`;
+        root.innerHTML = `<div class="h-full flex items-center justify-center text-sky-500 font-black">読み込み中...</div>`;
     } 
     else if (state.view === 'login') {
         root.innerHTML = `
             <div class="h-full flex flex-col justify-center p-8">
                 <div class="glass-card p-10 relative text-center">
-                    <button onclick="window.adminLogin()" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-4 py-1 rounded-full">ADMIN</button>
-                    <h1 class="text-4xl font-black text-sky-500 mb-8 mt-4">SISTAN</h1>
+                    <button onclick="window.adminLogin()" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-4 py-1 rounded-full uppercase">Admin</button>
+                    <h1 class="text-4xl font-black text-sky-500 mb-8 mt-4 uppercase">Sistan</h1>
                     <div class="space-y-4">
                         <input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-2 border-transparent focus:border-sky-200">
                         <input id="uPW" type="password" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-2 border-transparent focus:border-sky-200">
-                        <button onclick="window.login()" class="w-full py-4 btn-primary rounded-2xl shadow-lg">LOGIN</button>
+                        <button onclick="window.doLogin()" class="w-full py-4 btn-primary rounded-2xl shadow-lg">ログイン</button>
                     </div>
                 </div>
             </div>`;
@@ -2145,19 +2153,19 @@ function render() {
                     <button onclick="location.reload()" class="w-10 h-10 bg-white rounded-full text-red-400 font-bold shadow-sm">✕</button>
                 </div>
                 <div class="flex-1 space-y-4 overflow-y-auto scrollbar-hide">
-                    <button onclick="window.nav('range', 'Basic')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 01</span><span class="text-xl font-bold text-slate-700">Basic</span></button>
-                    <button onclick="window.nav('range', 'Standard')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 02</span><span class="text-xl font-bold text-slate-700">Standard</span></button>
-                    <button onclick="window.nav('range', 'Master')" class="w-full py-12 btn-primary rounded-[2.5rem] text-center shadow-xl text-2xl font-black">MASTER MODE</button>
+                    <button onclick="window.setView('range', 'Basic')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 01</span><span class="text-xl font-bold text-slate-700 font-black">Basic (100語単位)</span></button>
+                    <button onclick="window.setView('range', 'Standard')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 02</span><span class="text-xl font-bold text-slate-700 font-black">Standard (400語単位)</span></button>
+                    <button onclick="window.setView('range', 'Master')" class="w-full py-12 btn-primary rounded-[2.5rem] text-center shadow-xl text-2xl font-black">MASTER MODE</button>
                 </div>
             </div>`;
     } 
     else if (state.view === 'range') {
         if (state.quizType === 'Master') {
             root.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-8 text-center">
-                <div class="text-[10px] text-sky-400 font-bold mb-2 uppercase tracking-widest">Score</div>
+                <div class="text-[10px] text-sky-400 font-bold mb-2 uppercase tracking-widest">Accumulated Points</div>
                 <div class="text-8xl font-black text-slate-800 mb-12">${state.currentUser.progress}</div>
-                <button onclick="window.startQuiz(1, 2027)" class="w-full py-6 btn-primary rounded-[2.5rem] font-black text-xl shadow-xl">テスト開始</button>
-                <button onclick="window.nav('home')" class="mt-8 text-slate-400 font-bold p-4">ホームに戻る</button>
+                <button onclick="window.startQuiz(1, 2027)" class="w-full py-6 btn-primary rounded-[2.5rem] font-black text-xl shadow-xl">全範囲テスト開始</button>
+                <button onclick="window.setView('home')" class="mt-8 text-slate-400 font-bold p-4">ホームに戻る</button>
             </div>`;
         } else {
             let btns = "";
@@ -2165,21 +2173,21 @@ function render() {
             for (let i = 1; i <= 2000; i += step) {
                 btns += `<button onclick="window.startQuiz(${i}, ${i+step-1})" class="w-full p-5 glass-card font-bold text-slate-600 text-sm active:bg-sky-50">${i} ～ ${i+step-1}</button>`;
             }
-            root.innerHTML = `<div class="p-8 h-full flex flex-col"><h2 class="text-2xl font-black mb-6 text-slate-800">範囲を選択</h2><div class="flex-1 space-y-3 overflow-y-auto scrollbar-hide pb-10">${btns}</div><button onclick="window.nav('home')" class="py-4 text-slate-400 font-bold">戻る</button></div>`;
+            root.innerHTML = `<div class="p-8 h-full flex flex-col"><h2 class="text-2xl font-black mb-6 text-slate-800">範囲を選択</h2><div class="flex-1 space-y-3 overflow-y-auto scrollbar-hide pb-10">${btns}</div><button onclick="window.setView('home')" class="py-4 text-slate-400 font-bold">戻る</button></div>`;
         }
     } 
     else if (state.view === 'quiz') {
         const q = state.quiz.questions[state.quiz.curr];
-        const progress = ((state.quiz.curr + 1) / state.quiz.questions.length) * 100;
+        const prog = ((state.quiz.curr + 1) / state.quiz.questions.length) * 100;
         root.innerHTML = `
             <div class="h-full flex flex-col p-6">
-                <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden"><div class="h-full bg-sky-400" style="width: ${progress}%"></div></div>
+                <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden"><div class="h-full bg-sky-400" style="width: ${prog}%"></div></div>
                 <div class="flex-1 flex flex-col justify-center items-center text-center px-4">
                     <span class="text-[10px] font-bold text-sky-300 mb-2 uppercase tracking-widest">No.${q.id}</span>
-                    <h2 class="text-5xl font-black text-slate-800 leading-tight w-full break-words">${q.question}</h2>
+                    <h2 class="text-5xl font-black text-slate-800 leading-tight w-full break-words">${q.qText}</h2>
                 </div>
                 <div class="grid gap-3 mb-10">
-                    ${q.choices.map((c, i) => `<button onclick="window.checkAns(${i})" class="choice-btn shadow-sm">${c}</button>`).join('')}
+                    ${q.choices.map((c, i) => `<button onclick="window.checkAnswer(${i})" class="choice-btn shadow-sm">${c}</button>`).join('')}
                 </div>
             </div>`;
     } 
@@ -2187,31 +2195,34 @@ function render() {
         root.innerHTML = `
             <div class="h-full flex flex-col items-center justify-center p-8">
                 <div class="glass-card w-full p-12 text-center shadow-2xl">
-                    <h2 class="text-xs font-bold text-sky-400 mb-2 uppercase tracking-widest">Finish</h2>
+                    <h2 class="text-xs font-bold text-sky-400 mb-2 uppercase tracking-widest">Score</h2>
                     <div class="text-8xl font-black text-slate-800 mb-12">${state.quiz.score}<span class="text-2xl text-slate-200">/20</span></div>
-                    <button onclick="window.nav('home')" class="w-full py-5 btn-primary rounded-2xl font-black shadow-lg">ホームに戻る</button>
+                    <button onclick="window.setView('home')" class="w-full py-5 btn-primary rounded-2xl font-black shadow-lg">ホームに戻る</button>
                 </div>
             </div>`;
     } 
     else if (state.view === 'admin') {
         root.innerHTML = `<div class="p-8 h-full flex flex-col">
             <h2 class="text-2xl font-bold mb-6 text-slate-800">管理者画面</h2>
-            <div class="flex-1 overflow-auto bg-white rounded-3xl p-4 shadow-inner mb-6">
-                ${state.users.map(u => `<div class="flex justify-between p-4 border-b text-sm font-bold"><span>${u.id}</span><span class="text-sky-500">${u.progress}pt</span></div>`).join('')}
+            <div class="flex-1 overflow-auto bg-white rounded-3xl p-4 shadow-inner mb-6 scrollbar-hide">
+                ${state.users.map(u => `<div class="flex justify-between p-4 border-b border-slate-50 text-sm font-bold"><span>${u.id}</span><span class="text-sky-500">${u.progress}pt</span></div>`).join('')}
             </div>
-            <button onclick="window.nav('login')" class="py-5 text-slate-400 font-bold uppercase text-xs">ログアウト</button>
+            <button onclick="window.setView('login')" class="py-5 text-slate-400 font-bold uppercase text-xs tracking-widest">ログアウト</button>
         </div>`;
     }
 }
 
-// 初期起動
+// 初期化（Firebaseからユーザー取得）
 (async () => {
     try {
         const snap = await getDocs(collection(db, "users"));
         state.users = snap.docs.map(d => d.data());
         state.view = 'login';
         render();
-    } catch (e) { root.innerHTML = "Connection Error"; }
+    } catch (e) {
+        console.error(e);
+        root.innerHTML = "Firebase接続エラー";
+    }
 })();
 </script>
 </body>
