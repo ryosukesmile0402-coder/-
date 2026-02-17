@@ -24,6 +24,7 @@
         .ans-wrong { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -51,8 +52,7 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// --- 【重要】システム英単語 2027語データエリア ---
-// ここに本物のデータを貼り付けてください。IDが1から2027まで順番に並ぶようにします。
+// --- 2027語データエリア（Excelから作成したものをここに貼り付け） ---
 const wordData = [
 {id:1, en:"～に従う", ja:"follow"},
 {id:2, en:"～を考慮する", ja:"consider"},
@@ -2056,31 +2056,21 @@ const wordData = [
 {id:2000, en:"本来の", ja:"intrinsic"},
 ];
 
-// ダミー生成を完全に廃止しました。
-// データが足りない場合に警告を出す処理
-if (wordData.length < 2027) {
-    console.warn("データが2027語に達していません。不足分はクイズに出現しません。");
-}
-
 const ADMIN_PASS = "Henly0402";
 let state = { view: 'loading', currentUser: null, users: [], quiz: null, quizType: null };
 
 async function fetchUsers() {
-    const querySnapshot = await getDocs(collection(db, "users"));
-    state.users = querySnapshot.docs.map(doc => doc.data());
-    state.view = 'login'; render();
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
+        state.users = querySnapshot.docs.map(doc => doc.data());
+        state.view = 'login'; render();
+    } catch (e) { console.error(e); }
 }
 async function syncUser(user) { await setDoc(doc(db, "users", user.id), user); }
 
-document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-
-// 修正：ホーム画面に戻るための関数
 window.goHome = function() {
     if(sounds.click) sounds.click.play();
-    state.quiz = null;
-    state.quizType = null;
-    state.view = 'home';
-    render();
+    state.quiz = null; state.quizType = null; state.view = 'home'; render();
 };
 
 window.render = function() {
@@ -2105,16 +2095,16 @@ window.render = function() {
         root.innerHTML = `<div class="p-8 h-full flex flex-col fade-in">
             <div class="flex justify-between items-end mb-12">
                 <div><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Student</p><h2 class="text-3xl font-black text-slate-800">${state.currentUser.id}</h2></div>
-                <button onclick="location.reload()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full text-red-400 font-bold">✕</button>
+                <button onclick="location.reload()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full text-red-400 font-bold shadow-sm">✕</button>
             </div>
-            <div class="flex-1 space-y-4 overflow-y-auto">
+            <div class="flex-1 space-y-4 overflow-y-auto scrollbar-hide">
                 <button onclick="showRange('Basic')" class="w-full py-8 glass-card text-left px-8 active:bg-sky-50 transition">
-                    <span class="block text-[10px] font-bold text-sky-400 mb-1">Stage 01</span>
-                    <span class="text-xl font-bold">Basic (1-600)</span>
+                    <span class="block text-[10px] font-bold text-sky-400 mb-1 tracking-widest uppercase">Stage 01</span>
+                    <span class="text-xl font-bold text-slate-700">Basic (100語単位)</span>
                 </button>
                 <button onclick="showRange('Standard')" class="w-full py-8 glass-card text-left px-8 active:bg-sky-50 transition">
-                    <span class="block text-[10px] font-bold text-sky-400 mb-1">Stage 02</span>
-                    <span class="text-xl font-bold">Standard (601-1600)</span>
+                    <span class="block text-[10px] font-bold text-sky-400 mb-1 tracking-widest uppercase">Stage 02</span>
+                    <span class="text-xl font-bold text-slate-700">Standard (400語単位)</span>
                 </button>
                 <button onclick="showRange('Master')" class="w-full py-12 btn-primary rounded-[2.5rem] text-white text-center shadow-xl">
                     <span class="text-2xl font-black">Master Mode</span>
@@ -2125,17 +2115,27 @@ window.render = function() {
 
     else if (state.view === 'range') {
         let btnStr = "";
-        if(state.quizType === 'Basic') { for(let i=1; i<=600; i+=100) btnStr += `<button onclick="startQuiz(${i}, ${i+99})" class="w-full p-6 glass-card font-bold text-slate-600 active:bg-sky-50">${i} ～ ${i+99}</button>`; }
-        else if(state.quizType === 'Standard') { for(let i=601; i<=1600; i+=400) btnStr += `<button onclick="startQuiz(${i}, ${Math.min(i+399, 1600)})" class="w-full p-6 glass-card font-bold text-slate-600 active:bg-sky-50">${i} ～ ${Math.min(i+399, 1600)}</button>`; }
-        else {
+        // Basic: 1-2000までを100語ずつ
+        if(state.quizType === 'Basic') { 
+            for(let i=1; i<=2000; i+=100) {
+                btnStr += `<button onclick="startQuiz(${i}, ${i+99})" class="w-full p-5 glass-card font-bold text-slate-600 active:bg-sky-50 text-sm">${i} ～ ${i+99}</button>`;
+            }
+        }
+        // Standard: 1-2000までを400語ずつ
+        else if(state.quizType === 'Standard') { 
+            for(let i=1; i<=2000; i+=400) {
+                btnStr += `<button onclick="startQuiz(${i}, ${i+399})" class="w-full p-7 glass-card font-bold text-slate-600 active:bg-sky-50 text-base">${i} ～ ${i+399}</button>`;
+            }
+        }
+        else { // Master (全範囲)
             root.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-8 text-center fade-in">
-                <div class="text-[10px] text-sky-400 font-bold mb-4">Total Mastery Points</div>
+                <div class="text-[10px] text-sky-400 font-bold mb-4 uppercase tracking-widest">Total Mastery Points</div>
                 <div class="text-8xl font-black text-slate-800 mb-12">${state.currentUser.progress}</div>
                 <button onclick="startQuiz(1, 2027)" class="w-full py-6 btn-primary text-white rounded-[2rem] font-black text-xl shadow-xl">テスト開始</button>
                 <button onclick="goHome()" class="mt-8 text-slate-400 font-bold uppercase text-xs tracking-widest">ホームに戻る</button>
             </div>`; return;
         }
-        root.innerHTML = `<div class="p-8 h-full flex flex-col fade-in"><h2 class="text-3xl font-black mb-8 text-slate-800">範囲を選択</h2><div class="flex-1 space-y-3 overflow-y-auto">${btnStr}</div><button onclick="goHome()" class="py-4 text-slate-400 font-bold">戻る</button></div>`;
+        root.innerHTML = `<div class="p-8 h-full flex flex-col fade-in"><h2 class="text-2xl font-black mb-6 text-slate-800 tracking-tight">範囲を選択</h2><div class="flex-1 space-y-3 overflow-y-auto scrollbar-hide pb-10">${btnStr}</div><button onclick="goHome()" class="py-4 text-slate-400 font-bold">戻る</button></div>`;
     }
 
     else if (state.view === 'quiz') {
@@ -2143,12 +2143,12 @@ window.render = function() {
         const prog = ((state.quiz.curr + 1) / 20) * 100;
         root.innerHTML = `<div class="h-full flex flex-col p-6 fade-in">
             <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden"><div class="h-full bg-sky-400 transition-all duration-300" style="width: ${prog}%"></div></div>
-            <div class="flex-1 flex flex-col justify-center items-center text-center">
-                <span class="text-[10px] font-bold text-sky-300 mb-2 uppercase">No. ${q.id}</span>
-                <h2 class="text-6xl font-black text-slate-800 leading-tight tracking-tighter">${q.en}</h2>
+            <div class="flex-1 flex flex-col justify-center items-center text-center px-2">
+                <span class="text-[10px] font-bold text-sky-300 mb-2 uppercase tracking-widest">No. ${q.id}</span>
+                <h2 class="text-5xl font-black text-slate-800 leading-tight tracking-tighter break-all">${q.en}</h2>
             </div>
             <div class="grid gap-3 mb-4">
-                ${q.choices.map((c, i) => `<button id="c-${i}" onclick="check(${i})" class="choice-btn w-full p-5 rounded-2xl font-bold text-left text-slate-700 shadow-sm active:bg-sky-50">${c}</button>`).join('')}
+                ${q.choices.map((c, i) => `<button id="c-${i}" onclick="check(${i})" class="choice-btn w-full p-5 rounded-2xl font-bold text-left text-slate-700 shadow-sm active:bg-sky-50 border-2 border-slate-100">${c}</button>`).join('')}
             </div>
             <button onclick="check(-1)" class="w-full p-5 text-slate-300 font-bold mb-10 text-sm">わからない</button>
         </div>`;
@@ -2157,61 +2157,4 @@ window.render = function() {
     else if (state.view === 'result') {
         root.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-8 fade-in">
             <div class="glass-card w-full p-12 text-center shadow-2xl">
-                <h2 class="text-xs font-bold text-sky-400 mb-2 uppercase tracking-widest">Score</h2>
-                <div class="text-8xl font-black text-slate-800 mb-12">${state.quiz.score}<span class="text-2xl text-slate-200">/20</span></div>
-                <button onclick="goHome()" class="w-full py-5 btn-primary text-white rounded-2xl font-black shadow-lg">ホームに戻る</button>
-            </div>
-        </div>`;
-    }
-
-    else if (state.view === 'admin') {
-        root.innerHTML = `<div class="p-8 h-full flex flex-col fade-in">
-            <h2 class="text-3xl font-black mb-8 text-slate-800">管理者設定</h2>
-            <div class="glass-card p-6 mb-6">
-                <input id="nID" type="text" placeholder="ユーザーID" class="w-full p-4 bg-slate-50 rounded-xl mb-2">
-                <input id="nPW" type="text" placeholder="パスワード" class="w-full p-4 bg-slate-50 rounded-xl mb-4">
-                <button onclick="registerUser()" class="w-full py-4 btn-primary text-white rounded-xl font-bold">アカウント作成</button>
-            </div>
-            <div class="flex-1 glass-card overflow-hidden flex flex-col">
-                <div class="p-4 bg-sky-50 text-[10px] font-bold text-sky-400 uppercase tracking-widest">User List</div>
-                <div class="flex-1 overflow-y-auto">${state.users.map(u => `<div class="p-4 border-t flex justify-between font-bold text-sm"><span>${u.id}</span><span class="text-sky-500">${u.progress}pt</span></div>`).join('')}</div>
-            </div>
-            <button onclick="state.view='login'; render()" class="py-6 text-slate-400 font-bold">戻る</button>
-        </div>`;
-    }
-};
-
-window.adminAuth = () => { sounds.click.play(); if(prompt("パスワード") === ADMIN_PASS) { state.view = 'admin'; render(); } };
-window.registerUser = async () => { sounds.click.play(); const id=document.getElementById('nID').value, pw=document.getElementById('nPW').value; if(id&&pw){ await syncUser({id, pass:pw, progress:0}); await fetchUsers(); alert("登録しました"); } };
-window.doLogin = () => { const id=document.getElementById('uID').value, pw=document.getElementById('uPW').value; const u=state.users.find(x=>x.id===id&&x.pass===pw); if(u){ state.currentUser=u; state.view='home'; sounds.start.play(); render(); }else{ sounds.wrong.play(); alert("ログイン失敗"); } };
-window.showRange = (type) => { sounds.click.play(); state.quizType=type; state.view='range'; render(); };
-window.startQuiz = (min, max) => {
-    sounds.click.play();
-    let pool = wordData.filter(w => w.id >= min && w.id <= max);
-    if (pool.length === 0) { alert("この範囲にデータがありません。"); return; }
-    let qs = [];
-    for(let i=0; i<20; i++){
-        if(pool.length===0) break;
-        const t = pool.splice(Math.floor(Math.random()*pool.length), 1)[0];
-        let cs = [t.ja];
-        while(cs.length<4){ 
-            let r=wordData[Math.floor(Math.random()*wordData.length)].ja; 
-            if(!cs.includes(r)) cs.push(r); 
-        }
-        qs.push({...t, choices: cs.sort(()=>Math.random()-0.5)});
-    }
-    state.quiz = { questions: qs, curr: 0, score: 0 }; state.view = 'quiz'; render();
-};
-window.check = async (idx) => {
-    const q = state.quiz.questions[state.quiz.curr];
-    const ok = (idx!==-1 && q.choices[idx]===q.ja);
-    if(ok){ sounds.correct.play(); state.quiz.score++; if(state.quizType==='Master'){ state.currentUser.progress++; await syncUser(state.currentUser); } }
-    else { sounds.wrong.play(); }
-    if(idx!==-1) document.getElementById(`c-${idx}`).classList.add(ok?'ans-correct':'ans-wrong');
-    setTimeout(()=>{ if(state.quiz.curr<state.quiz.questions.length-1){ state.quiz.curr++; render(); }else{ state.view='result'; render(); } }, 400);
-};
-
-fetchUsers();
-</script>
-</body>
-</html>
+                <h2 class="text-
