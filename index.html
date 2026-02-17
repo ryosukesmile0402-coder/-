@@ -36,9 +36,8 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
-// --- ここにデータを貼り付け ---
 window.wordData = [
-    {id:1, en:"follow", ja:"～に従う"},
+{id:1, en:"follow", ja:"～に従う"},
 {id:2, en:"consider", ja:"～を考慮する"},
 {id:3, en:"increase", ja:"増える"},
 {id:4, en:"expect", ja:"～を予期する"},
@@ -2045,21 +2044,18 @@ const ADMIN_PASS = "Henly0402";
 let state = { view: 'login', currentUser: null, users: [], quiz: null, quizType: null };
 const root = document.getElementById('app');
 
-// --- 画面遷移 (グローバル) ---
 window.nav = (v, type = null) => {
     state.view = v;
     if (type) state.quizType = type;
     render();
 };
 
-// --- 管理者ログイン ---
 window.adminLogin = () => {
     const p = prompt("管理者パスワード");
     if (p === ADMIN_PASS) window.nav('admin');
     else if (p) alert("パスワードが違います");
 };
 
-// --- 一般ログイン ---
 window.login = () => {
     const id = document.getElementById('uID').value;
     const pw = document.getElementById('uPW').value;
@@ -2068,17 +2064,29 @@ window.login = () => {
     else { alert("IDまたはPassが違います"); }
 };
 
-// --- クイズ開始 (ここが英語→日本語の心臓部) ---
+// --- ユーザー追加機能 ---
+window.addUser = async () => {
+    const id = document.getElementById('newID').value;
+    const pw = document.getElementById('newPW').value;
+    if (!id || !pw) return alert("IDとパスワードを入力してください");
+    
+    const newUser = { id: id, pass: pw, progress: 0 };
+    try {
+        await setDoc(doc(db, "users", id), newUser);
+        state.users.push(newUser);
+        alert("ユーザーを追加しました");
+        render();
+    } catch (e) {
+        alert("追加に失敗しました");
+    }
+};
+
 window.startQuiz = (min, max) => {
     const pool = window.wordData.filter(w => w.id >= min && w.id <= max);
     if (pool.length === 0) return alert("データがありません");
-
-    // 20問選ぶ
     const selected = [...pool].sort(() => Math.random() - 0.5).slice(0, 20);
-    
     state.quiz = {
         questions: selected.map(item => {
-            // 選択肢作成 (日本語だけを集める)
             let choices = [item.ja]; 
             while (choices.length < 4) {
                 const r = window.wordData[Math.floor(Math.random() * window.wordData.length)].ja;
@@ -2086,8 +2094,8 @@ window.startQuiz = (min, max) => {
             }
             return {
                 id: item.id,
-                english: item.en, // 問題：英語
-                japanese: item.ja, // 正解：日本語
+                english: item.en,
+                japanese: item.ja,
                 options: choices.sort(() => Math.random() - 0.5)
             };
         }),
@@ -2097,11 +2105,9 @@ window.startQuiz = (min, max) => {
     window.nav('quiz');
 };
 
-// --- 解答チェック ---
 window.checkAns = async (idx) => {
     const q = state.quiz.questions[state.quiz.curr];
     const isOk = (q.options[idx] === q.japanese);
-    
     if (isOk) {
         state.quiz.score++;
         if (state.quizType === 'Master') {
@@ -2109,14 +2115,12 @@ window.checkAns = async (idx) => {
             try { await setDoc(doc(db, "users", state.currentUser.id), state.currentUser); } catch(e){}
         }
     }
-
     const btns = document.querySelectorAll('.choice-btn');
     btns.forEach((b, i) => {
-        b.onclick = null; // 連続押し防止
+        b.onclick = null;
         if (i === idx) b.classList.add(isOk ? 'ans-correct' : 'ans-wrong');
         if (q.options[i] === q.japanese) b.classList.add('ans-correct');
     });
-
     setTimeout(() => {
         if (state.quiz.curr < state.quiz.questions.length - 1) {
             state.quiz.curr++;
@@ -2133,10 +2137,10 @@ function render() {
             <div class="h-full flex flex-col justify-center p-8">
                 <div class="glass-card p-10 relative text-center">
                     <button onclick="window.adminLogin()" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-4 py-1 rounded-full">ADMIN</button>
-                    <h1 class="text-4xl font-black text-sky-500 mb-8 mt-4">SISTAN</h1>
+                    <h1 class="text-4xl font-black text-sky-500 mb-8 mt-4 uppercase">Sistan</h1>
                     <div class="space-y-4">
-                        <input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-2 border-transparent focus:border-sky-200">
-                        <input id="uPW" type="password" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-2 border-transparent focus:border-sky-200">
+                        <input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
+                        <input id="uPW" type="password" placeholder="Pass" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
                         <button onclick="window.login()" class="w-full py-4 btn-primary rounded-2xl shadow-lg">ログイン</button>
                     </div>
                 </div>
@@ -2199,17 +2203,36 @@ function render() {
             </div>`;
     } 
     else if (state.view === 'admin') {
-        root.innerHTML = `<div class="p-8 h-full flex flex-col">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800">管理者画面</h2>
-            <div class="flex-1 overflow-auto bg-white rounded-3xl p-4 shadow-inner mb-6">
-                ${state.users.map(u => `<div class="flex justify-between p-4 border-b text-sm font-bold"><span>${u.id}</span><span class="text-sky-500">${u.progress}pt</span></div>`).join('')}
+        root.innerHTML = `
+        <div class="p-8 h-full flex flex-col overflow-hidden">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Administrator</h2>
+            
+            <div class="glass-card p-4 mb-6 space-y-3 bg-white/50">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Add New Student</p>
+                <div class="flex gap-2">
+                    <input id="newID" type="text" placeholder="ID" class="flex-1 p-2 text-sm bg-white rounded-lg border border-slate-200 outline-none">
+                    <input id="newPW" type="text" placeholder="Pass" class="flex-1 p-2 text-sm bg-white rounded-lg border border-slate-200 outline-none">
+                </div>
+                <button onclick="window.addUser()" class="w-full py-2 btn-primary rounded-lg text-sm">ユーザーを追加登録</button>
             </div>
-            <button onclick="window.nav('login')" class="py-5 text-slate-400 font-bold uppercase text-xs">ログアウト</button>
+
+            <div class="flex-1 overflow-auto bg-white rounded-3xl p-4 shadow-inner mb-6">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-2">Student List</p>
+                ${state.users.map(u => `
+                    <div class="flex justify-between items-center p-4 border-b border-slate-50">
+                        <div>
+                            <p class="text-sm font-black text-slate-700">${u.id}</p>
+                            <p class="text-[10px] text-slate-300 font-mono">PW: ${u.pass}</p>
+                        </div>
+                        <span class="text-sky-500 font-bold">${u.progress}pt</span>
+                    </div>`).join('')}
+            </div>
+            
+            <button onclick="window.nav('login')" class="py-4 text-slate-400 font-bold uppercase text-xs tracking-widest text-center">ログアウト</button>
         </div>`;
     }
 }
 
-// ユーザーデータ読み込み
 (async () => {
     try {
         const snap = await getDocs(collection(db, "users"));
@@ -2218,7 +2241,6 @@ function render() {
     } catch (e) { console.error(e); }
 })();
 
-// 初期描画
 render();
 </script>
 </body>
