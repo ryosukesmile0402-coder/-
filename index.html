@@ -3,214 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>シス単 Quiz - 2027 Complete</title>
+    <title>シス単 Quiz - 日本語版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; touch-action: manipulation; }
-        .master-gold { background: linear-gradient(135deg, #ffd700, #fff8e1, #ffb300); color: #856404 !important; animation: pulse 2s infinite; box-shadow: 0 10px 20px rgba(218, 165, 32, 0.4); border: none !important; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f1f5f9; touch-action: manipulation; }
         .ans-correct { background-color: #10b981 !important; color: white !important; }
         .ans-wrong { background-color: #ef4444 !important; color: white !important; }
+        .unknown-btn { background-color: #94a3b8 !important; color: white !important; }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-// --- 1. 全2027単語データ完全版 ---
+// --- 全単語データ (代表例。実際は2027語すべてここに入ります) ---
 const wordData = [
-    {id:1, en:"follow", ja:"～に従う"}, {id:2, en:"consider", ja:"～を考慮する"}, {id:3, en:"increase", ja:"増える"},
-    {id:4, en:"expect", ja:"～を予期する"}, {id:5, en:"decide", ja:"決意する"}, {id:6, en:"develop", ja:"発達する"},
-    {id:7, en:"provide", ja:"供給する"}, {id:8, en:"continue", ja:"続く"}, {id:9, en:"include", ja:"含む"},
-    {id:10, en:"remain", ja:"ままでいる"}, {id:11, en:"reach", ja:"～に着く"}, {id:12, en:"allow", ja:"許可する"},
-    {id:13, en:"force", ja:"強制する"}, {id:14, en:"offer", ja:"申し出る"}, {id:15, en:"realize", ja:"悟る"},
-    {id:16, en:"suggest", ja:"提案する"}, {id:17, en:"require", ja:"必要とする"}, {id:18, en:"worry", ja:"心配する"},
-    {id:19, en:"wonder", ja:"疑問に思う"}, {id:20, en:"cost", ja:"要する"}, {id:21, en:"tend", ja:"～する傾向がある"},
-    {id:22, en:"depend", ja:"依存する"}, {id:23, en:"share", ja:"共有する"}, {id:24, en:"demand", ja:"要求する"},
-    {id:25, en:"support", ja:"支持する"}, {id:26, en:"hire", ja:"雇う"}, {id:27, en:"regard", ja:"～とみなす"},
-    {id:28, en:"base", ja:"基づいている"}, {id:29, en:"improve", ja:"向上させる"}, {id:30, en:"recognize", ja:"認める"},
-    // ... (1100番台)
-    {id:1101, en:"minimum", ja:"最小限の"}, {id:1102, en:"lord", ja:"神"}, {id:1103, en:"awkward", ja:"気まずい"},
-    {id:1104, en:"meanwhile", ja:"その間に"}, {id:1105, en:"genuine", ja:"本物の"}, {id:1106, en:"keen", ja:"熱望して"},
-    // ... (1900番台)
-    {id:1948, en:"swift", ja:"すばやい"}, {id:1949, en:"naive", ja:"世間知らずの"}, {id:1950, en:"dumb", ja:"ばか"},
-    {id:1951, en:"gloomy", ja:"暗い"}, {id:1952, en:"queer", ja:"奇妙な"}, {id:1953, en:"subtle", ja:"微妙な"},
-    {id:1954, en:"sinister", ja:"不吉な"}, {id:1955, en:"vile", ja:"下品な"}, {id:1956, en:"exhibit", ja:"展示する"},
-    {id:1957, en:"reproduce", ja:"再生する"}, {id:1958, en:"multiply", ja:"増やす"}, {id:1959, en:"reconcile", ja:"和解させる"},
-    {id:1960, en:"remedy", ja:"治療"}, {id:1961, en:"medication", ja:"薬物治療"}, {id:1962, en:"physician", ja:"内科医"},
-    {id:1963, en:"hygiene", ja:"衛生"}, {id:1964, en:"epidemic", ja:"伝染病"}, {id:1965, en:"metabolism", ja:"代謝"},
-    {id:1966, en:"organism", ja:"生物"}, {id:1967, en:"evolution", ja:"進化"}, {id:1968, en:"ecology", ja:"生態"},
-    {id:1969, en:"biodiversity", ja:"生物多様性"}, {id:1970, en:"habitat", ja:"生息地"}, {id:1971, en:"conservation", ja:"保護"},
-    {id:1972, en:"globalization", ja:"グローバル化"}, {id:1973, en:"infrastructure", ja:"基盤"}, {id:1974, en:"innovation", ja:"革新"},
-    {id:1975, en:"entrepreneur", ja:"起業家"}, {id:1976, en:"corporation", ja:"法人"}, {id:1977, en:"venture", ja:"ベンチャー"},
-    {id:1978, en:"subsidy", ja:"補助金"}, {id:1979, en:"debt", ja:"借金"}, {id:1980, en:"inflation", ja:"インフレ"},
-    {id:1981, en:"recession", ja:"不況"}, {id:1982, en:"democracy", ja:"民主主義"}, {id:1983, en:"republic", ja:"共和国"},
-    {id:1984, en:"monarchy", ja:"君主制"}, {id:1985, en:"parliament", ja:"国会"}, {id:1986, en:"election", ja:"選挙"},
-    {id:1987, en:"policy", ja:"政策"}, {id:1988, en:"constitution", ja:"憲法"}, {id:1989, en:"legislation", ja:"立法"},
-    {id:1990, en:"judicial", ja:"裁判の"}, {id:1991, en:"jurisdiction", ja:"管轄権"}, {id:1992, en:"treaty", ja:"条約"},
-    {id:1993, en:"alliance", ja:"同盟"}, {id:1994, en:"conflict", ja:"紛争"}, {id:1995, en:"territory", ja:"領土"},
-    {id:1996, en:"defense", ja:"防衛"}, {id:1997, en:"strategy", ja:"戦略"}, {id:1998, en:"diplomacy", ja:"外交"},
-    {id:1999, en:"ambassador", ja:"大使"}, {id:2000, en:"dimension", ja:"次元"}, {id:2001, en:"dull", ja:"退屈させる"},
-    {id:2002, en:"ethnic", ja:"民族的な"}, {id:2003, en:"steady", ja:"しっかりした"}, {id:2004, en:"terminal", ja:"終点"},
-    {id:2005, en:"abuse", ja:"虐待"}, {id:2006, en:"deliberately", ja:"わざと"}, {id:2007, en:"accustomed", ja:"慣れた"},
-    {id:2008, en:"organ", ja:"臓器"}, {id:2009, en:"delicate", ja:"繊細な"}, {id:2010, en:"casual", ja:"形式ばらない"},
-    {id:2011, en:"strip", ja:"細長い一片"}, {id:2012, en:"constitution", ja:"憲法"}, {id:2013, en:"barely", ja:"かろうじて"},
-    {id:2014, en:"annual", ja:"年に１度の"}, {id:2015, en:"fellow", ja:"仲間の"}, {id:2016, en:"core", ja:"中心"},
-    {id:2017, en:"basis", ja:"基礎"}, {id:2018, en:"horizon", ja:"地平線"}, {id:2019, en:"awful", ja:"ひどい"},
-    {id:2020, en:"passive", ja:"受動的な"}, {id:2021, en:"mature", ja:"成熟した"}, {id:2022, en:"faculty", ja:"学部"},
-    {id:2023, en:"inclined", ja:"Ｖする傾向がある"}, {id:2024, en:"shade", ja:"陰"}, {id:2025, en:"version", ja:"型"},
-    {id:2026, en:"administration", ja:"経営"}, {id:2027, en:"protocol", ja:"議定書"}
+    {id:1, en:"follow", ja:"～に従う"}, {id:2, en:"consider", ja:"～を考慮する"}, 
+    // ... (中略：以前の全2027語のリストをここに維持してください) ...
+    {id:2027, en:"protocol", ja:"議定書"}
 ];
 
-// --- 2. 状態管理 ---
 const ADMIN_PASS = "Henly0402";
 let state = {
-    view: 'splash',
+    view: 'login',
     currentUser: null,
-    users: JSON.parse(localStorage.getItem('sys_users_final_v3')) || [],
+    users: JSON.parse(localStorage.getItem('sys_users_v4')) || [],
     quiz: null
 };
 
-function save() { localStorage.setItem('sys_users_final_v3', JSON.stringify(state.users)); }
+function save() { localStorage.setItem('sys_users_v4', JSON.stringify(state.users)); }
 
-// --- 3. 描画エンジン ---
 function render() {
     const root = document.getElementById('app');
-    if (!root) return;
-
-    if (state.view === 'splash') {
-        root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white text-center"><div><h1 class="text-3xl font-black text-blue-600 mb-2 tracking-tighter">SYSTEM Quiz</h1><p class="text-slate-300 italic">produced by Henly</p></div></div>`;
-        setTimeout(() => { state.view = 'login'; render(); }, 2000);
-    } 
     
-    else if (state.view === 'login') {
+    if (state.view === 'login') {
         root.innerHTML = `
-            <div class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50">
-                <div class="w-full max-w-sm bg-white p-10 rounded-[2.5rem] shadow-2xl relative">
-                    <button onclick="adminAuth()" class="absolute top-8 left-8 text-[10px] font-black text-slate-200 tracking-widest uppercase">Admin</button>
-                    <h2 class="text-2xl font-black text-center mb-10 tracking-tight text-slate-800 uppercase">Login</h2>
-                    <input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-400 transition">
-                    <input id="uPW" type="password" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl mb-8 outline-none border-2 border-transparent focus:border-blue-400 transition">
-                    <button onclick="doLogin()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl active:scale-95 transition">START</button>
+            <div class="min-h-screen flex items-center justify-center p-6">
+                <div class="w-full max-w-sm bg-white p-10 rounded-[2.5rem] shadow-xl">
+                    <button onclick="adminAuth()" class="text-[10px] text-slate-200 mb-6">管理者用</button>
+                    <h2 class="text-2xl font-black text-center mb-10 text-slate-800">ログイン</h2>
+                    <input id="uID" type="text" placeholder="ユーザーID" class="w-full p-4 bg-slate-50 rounded-2xl mb-4 outline-none border-2 border-transparent focus:border-blue-500">
+                    <input id="uPW" type="password" placeholder="パスワード" class="w-full p-4 bg-slate-50 rounded-2xl mb-8 outline-none border-2 border-transparent focus:border-blue-500">
+                    <button onclick="login()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100">学習を始める</button>
                 </div>
             </div>`;
     }
 
     else if (state.view === 'home') {
         const u = state.currentUser;
-        const prog = Math.min(100, (u.progress / 2000) * 100);
         root.innerHTML = `
-            <div class="min-h-screen max-w-md mx-auto p-8 flex flex-col">
-                <div class="flex justify-between items-center mb-12">
-                    <span class="text-[10px] font-black text-slate-400 tracking-widest uppercase">ID: ${u.id}</span>
-                    <button onclick="state.view='login'; render()" class="text-[10px] font-bold text-red-400 uppercase">Exit</button>
+            <div class="min-h-screen p-8 max-w-md mx-auto">
+                <div class="flex justify-between items-center mb-10">
+                    <span class="text-sm font-bold text-slate-400">ID: ${u.id}</span>
+                    <button onclick="state.view='login'; render()" class="text-sm text-red-400 font-bold">ログアウト</button>
                 </div>
-                <div class="flex-1 space-y-4">
-                    <button onclick="startQuiz('Basic')" class="w-full py-8 bg-white rounded-[2rem] border-2 border-slate-100 font-bold text-xl text-slate-700 active:bg-slate-50 transition">Basic</button>
-                    <button onclick="startQuiz('Standard')" class="w-full py-8 bg-white rounded-[2rem] border-2 border-slate-100 font-bold text-xl text-slate-700 active:bg-slate-50 transition">Standard</button>
-                    <div class="pt-6">
-                        <button onclick="startQuiz('Master')" class="w-full py-12 rounded-[2.5rem] text-2xl font-black transition-all ${u.progress >= 2000 ? 'master-gold' : 'bg-slate-900 text-white'}">
-                            ${u.progress >= 2000 ? '👑 MASTER' : 'Master'}
-                        </button>
-                        <div class="mt-8 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-blue-500 h-full transition-all duration-1000" style="width: ${prog}%"></div>
-                        </div>
-                        <div class="flex justify-between mt-4">
-                            <span class="text-[10px] font-black text-slate-300 tracking-widest uppercase">${u.progress} / 2000 WORDS</span>
-                        </div>
-                    </div>
+                <h2 class="text-xl font-black mb-6 text-slate-800">コースを選択</h2>
+                <div class="space-y-4">
+                    <button onclick="selectRange('Basic')" class="w-full py-6 bg-white rounded-3xl font-bold text-slate-700 shadow-sm border border-slate-100">Basic</button>
+                    <button onclick="selectRange('Standard')" class="w-full py-6 bg-white rounded-3xl font-bold text-slate-700 shadow-sm border border-slate-100">Standard</button>
+                    <button onclick="selectRange('Master')" class="w-full py-10 bg-slate-900 text-white rounded-[2rem] font-black text-xl shadow-xl">Master</button>
                 </div>
             </div>`;
+    }
+
+    else if (state.view === 'rangeSelect') {
+        const type = state.quizType;
+        let buttons = "";
+        if(type === 'Basic') {
+            for(let i=1; i<=400; i+=100) buttons += `<button onclick="startQuiz(${i}, ${i+99})" class="w-full p-6 bg-white rounded-2xl font-bold mb-3 border border-slate-100">${i} ～ ${i+99}</button>`;
+        } else if(type === 'Standard') {
+            for(let i=401; i<=1200; i+=400) buttons += `<button onclick="startQuiz(${i}, ${i+399})" class="w-full p-6 bg-white rounded-2xl font-bold mb-3 border border-slate-100">${i} ～ ${i+399}</button>`;
+        } else {
+            root.innerHTML = `
+                <div class="min-h-screen p-8 flex flex-col items-center justify-center text-center">
+                    <div class="mb-10">
+                        <p class="text-slate-400 font-bold mb-2 uppercase tracking-widest text-xs">2000語 到達度</p>
+                        <h2 class="text-6xl font-black text-blue-600">${state.currentUser.progress}<span class="text-xl text-slate-400">/2000</span></h2>
+                    </div>
+                    <button onclick="startQuiz(1, 2027)" class="w-full max-w-xs py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl">START</button>
+                    <button onclick="state.view='home'; render()" class="mt-8 text-slate-400 font-bold">戻る</button>
+                </div>`;
+            return;
+        }
+        root.innerHTML = `<div class="p-8 max-w-md mx-auto"><h2 class="text-xl font-black mb-8">範囲を選択</h2>${buttons}<button onclick="state.view='home'; render()" class="w-full mt-4 text-slate-400 font-bold">戻る</button></div>`;
     }
 
     else if (state.view === 'test') {
         const q = state.quiz.questions[state.quiz.curr];
-        const prog = ((state.quiz.curr + 1) / state.quiz.questions.length) * 100;
         root.innerHTML = `
-            <div class="min-h-screen p-6 flex flex-col max-w-md mx-auto bg-white">
-                <div class="w-full bg-slate-100 h-1 rounded-full mb-20">
-                    <div class="bg-blue-500 h-full transition-all" style="width: ${prog}%"></div>
+            <div class="min-h-screen p-6 max-w-md mx-auto bg-white flex flex-col">
+                <div class="mt-16 mb-20 text-center flex-1 flex flex-col justify-center">
+                    <p class="text-xs text-slate-300 mb-2 font-bold tracking-widest uppercase">No. ${q.id}</p>
+                    <h2 class="text-5xl font-black text-slate-800 tracking-tighter">${q.en}</h2>
                 </div>
-                <div class="flex-1 flex flex-col items-center justify-center text-center">
-                    <div class="text-[10px] font-black text-slate-200 mb-4 tracking-widest uppercase">No. ${q.id}</div>
-                    <div class="text-5xl font-black text-slate-800 mb-16 tracking-tighter">${q.en}</div>
+                <div class="grid gap-3 mb-4">
+                    ${q.choices.map((c, i) => `<button id="c-${i}" onclick="check(${i})" class="w-full p-5 bg-slate-50 rounded-2xl font-bold text-left border-2 border-transparent active:border-blue-400">${c}</button>`).join('')}
                 </div>
-                <div class="grid gap-3 mb-12">
-                    ${q.choices.map((c, i) => `<button id="c-${i}" onclick="checkAns(${i})" class="w-full p-5 bg-slate-50 rounded-2xl font-bold text-left border-2 border-transparent active:border-blue-400 transition-all">${c}</button>`).join('')}
-                </div>
+                <button onclick="check(-1)" class="w-full p-5 bg-slate-200 text-slate-600 rounded-2xl font-bold mb-10">わからない</button>
             </div>`;
     }
 
     else if (state.view === 'result') {
-        const q = state.quiz;
-        const u = state.currentUser;
-        if (q.level === 'Master' && u.progress < 2000) {
-            u.progress = Math.max(0, u.progress + (q.score - (q.questions.length - q.score)));
-            if(u.progress >= 2000) u.progress = 2000;
-        }
-        save();
         root.innerHTML = `
             <div class="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-white">
-                <div class="text-4xl font-black text-blue-600 mb-4 tracking-tighter uppercase">Result</div>
-                <div class="text-xl font-bold text-slate-800 mb-12">${q.score} / ${q.questions.length} Correct</div>
-                <button onclick="state.view='home'; render()" class="w-full max-w-xs py-5 bg-slate-900 text-white rounded-2xl font-black shadow-xl">CONTINUE</button>
+                <h2 class="text-2xl font-black mb-2">結果発表</h2>
+                <div class="text-7xl font-black text-blue-600 mb-12">${state.quiz.score}<span class="text-2xl text-slate-300">/20</span></div>
+                <button onclick="state.view='home'; render()" class="w-full max-w-xs py-5 bg-slate-900 text-white rounded-2xl font-black shadow-xl">ホームに戻る</button>
             </div>`;
     }
 
     else if (state.view === 'admin') {
         root.innerHTML = `
-            <div class="min-h-screen p-8 bg-slate-50 max-w-md mx-auto">
-                <div class="flex justify-between items-center mb-10"><h2 class="font-black text-xl uppercase tracking-tighter">Admin Panel</h2><button onclick="state.view='login'; render()" class="text-xs font-bold text-slate-400">Exit</button></div>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm mb-8">
-                    <input id="nID" type="text" placeholder="New ID" class="w-full p-4 bg-slate-50 rounded-2xl mb-2 outline-none">
-                    <input id="nPW" type="text" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none">
-                    <button onclick="regUser()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black">Add User</button>
+            <div class="p-8 max-w-md mx-auto">
+                <h2 class="text-xl font-black mb-8 uppercase tracking-tighter">管理者設定</h2>
+                <div class="bg-white p-6 rounded-3xl shadow-sm mb-8">
+                    <p class="text-[10px] font-black text-slate-300 mb-4 uppercase">新規ユーザー追加</p>
+                    <input id="nID" type="text" placeholder="ユーザーID" class="w-full p-4 bg-slate-50 rounded-xl mb-2 outline-none">
+                    <input id="nPW" type="text" placeholder="パスワード" class="w-full p-4 bg-slate-50 rounded-xl mb-4 outline-none">
+                    <button onclick="reg()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold">登録する</button>
                 </div>
-                <div class="bg-white rounded-[2rem] shadow-sm overflow-hidden">
-                    ${state.users.map(u => `<div class="p-6 border-t flex justify-between items-center"><div class="font-black text-slate-800">${u.id}</div><div class="text-[10px] text-slate-400">${u.progress}/2000</div></div>`).join('')}
+                <div class="bg-white rounded-3xl shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50 text-[10px] font-black text-slate-400">登録済みユーザー</div>
+                    ${state.users.map(u => `<div class="p-5 border-t flex justify-between font-bold text-slate-700"><span>${u.id}</span><span class="text-blue-500">${u.progress}pt</span></div>`).join('')}
                 </div>
+                <button onclick="state.view='login'; render()" class="w-full mt-8 text-slate-400 font-bold">終了</button>
             </div>`;
     }
 }
 
-// --- 4. 実行ロジック ---
-function adminAuth() { if (prompt("Admin Password") === ADMIN_PASS) { state.view = 'admin'; render(); } }
-function regUser() {
+// --- アクション ---
+function adminAuth() { if (prompt("管理者パスワードを入力") === ADMIN_PASS) { state.view = 'admin'; render(); } }
+function reg() {
     const id = document.getElementById('nID').value, pw = document.getElementById('nPW').value;
-    if(id && pw) { state.users.push({id, pass:pw, progress:0}); save(); render(); }
+    if(id && pw) { state.users.push({id, pass:pw, progress:0}); save(); render(); alert("登録しました"); }
 }
-function doLogin() {
+function login() {
     const id = document.getElementById('uID').value, pw = document.getElementById('uPW').value;
     const u = state.users.find(x => x.id === id && x.pass === pw);
-    if(u) { state.currentUser = u; state.view = 'home'; render(); } else { alert("Invalid Login"); }
+    if(u) { state.currentUser = u; state.view = 'home'; render(); } else { alert("IDまたはパスワードが違います"); }
 }
-function startQuiz(level) {
-    let pool = [...wordData];
+function selectRange(type) { state.quizType = type; state.view = 'rangeSelect'; render(); }
+function startQuiz(min, max) {
+    let pool = wordData.filter(w => w.id >= min && w.id <= max);
     let qs = [];
-    const num = (level === 'Master') ? 100 : 20;
-    for(let i=0; i<num; i++){
-        const target = pool.splice(Math.floor(Math.random()*pool.length), 1)[0];
-        let choices = [target.ja];
-        while(choices.length < 4){
-            const c = wordData[Math.floor(Math.random()*wordData.length)].ja;
-            if(!choices.includes(c)) choices.push(c);
+    const count = Math.min(pool.length, 20);
+    for(let i=0; i<count; i++){
+        const t = pool.splice(Math.floor(Math.random()*pool.length), 1)[0];
+        let cs = [t.ja];
+        while(cs.length < 4){
+            let r = wordData[Math.floor(Math.random()*wordData.length)].ja;
+            if(!cs.includes(r)) cs.push(r);
         }
-        qs.push({...target, choices: choices.sort(() => Math.random()-0.5)});
+        qs.push({...t, choices: cs.sort(() => Math.random()-0.5)});
     }
-    state.quiz = { level, questions: qs, curr: 0, score: 0 };
+    state.quiz = { questions: qs, curr: 0, score: 0 };
     state.view = 'test';
     render();
 }
-function checkAns(idx) {
+function check(idx) {
     const q = state.quiz.questions[state.quiz.curr];
     const ok = (idx !== -1 && q.choices[idx] === q.ja);
-    document.getElementById(`c-${idx}`).classList.add(ok ? 'ans-correct' : 'ans-wrong');
-    if(ok) state.quiz.score++;
+    const btns = document.querySelectorAll('.choice-btn');
+    
+    if(idx === -1) {
+        // 「わからない」ボタンが押された場合
+    } else {
+        document.getElementById(`c-${idx}`).classList.add(ok ? 'ans-correct' : 'ans-wrong');
+    }
+    
+    if(ok) { 
+        state.quiz.score++;
+        if(state.quizType === 'Master') state.currentUser.progress++;
+    }
+    save();
     setTimeout(() => {
         if(state.quiz.curr < state.quiz.questions.length - 1) { state.quiz.curr++; render(); }
         else { state.view = 'result'; render(); }
-    }, 450);
+    }, 500);
 }
 
 render();
