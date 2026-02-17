@@ -11,7 +11,7 @@
         #app { height: 100dvh; width: 100%; display: flex; flex-direction: column; }
         .glass-card { background: rgba(255, 255, 255, 0.9); border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .btn-primary { background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: white; font-weight: bold; }
-        .choice-btn { background: white; border: 2px solid #e2e8f0; transition: all 0.1s; text-align: left; padding: 1.25rem; border-radius: 1rem; font-weight: bold; color: #334155; }
+        .choice-btn { background: white; border: 2px solid #e2e8f0; transition: all 0.1s; text-align: left; padding: 1.25rem; border-radius: 1rem; font-weight: bold; color: #334155; width: 100%; }
         .ans-correct { background-color: #10b981 !important; color: white !important; border-color: #10b981 !important; }
         .ans-wrong { background-color: #ef4444 !important; color: white !important; border-color: #ef4444 !important; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -36,8 +36,9 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 
 // --- 2027語データ管理 ---
+// ここに本物のデータを貼り付けてください
 let wordData = [
-    {id:1, en:"～に従う", ja:"follow"},
+   {id:1, en:"～に従う", ja:"follow"},
 {id:2, en:"～を考慮する", ja:"consider"},
 {id:3, en:"増える", ja:"increase"},
 {id:4, en:"～を予期する", ja:"expect"},
@@ -2047,10 +2048,10 @@ async function fetchUsers() {
         const querySnapshot = await getDocs(collection(db, "users"));
         state.users = querySnapshot.docs.map(doc => doc.data());
         state.view = 'login'; render();
-    } catch (e) { document.getElementById('app').innerHTML = "Firebase Connection Error"; }
+    } catch (e) { document.getElementById('app').innerHTML = "Firebase Error"; }
 }
 
-// ホームに戻るための統一関数
+// ホームに戻る処理をwindowオブジェクトに固定
 window.goHome = function() {
     state.quiz = null;
     state.quizType = null;
@@ -2066,7 +2067,7 @@ window.render = function() {
         root.innerHTML = `
             <div class="h-full flex flex-col justify-center p-8">
                 <div class="glass-card p-10 relative text-center">
-                    <button id="adminBtn" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-3 py-1 rounded-full">管理者ログイン</button>
+                    <button onclick="if(prompt('管理者パスワード') === '${ADMIN_PASS}') { state.view = 'admin'; render(); }" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-3 py-1 rounded-full">管理者ログイン</button>
                     <h1 class="text-4xl font-black text-sky-500 mb-8 mt-4">SISTAN</h1>
                     <div class="space-y-4">
                         <input id="uID" type="text" placeholder="ユーザーID" class="w-full p-4 bg-slate-50 rounded-xl outline-none">
@@ -2075,7 +2076,6 @@ window.render = function() {
                     </div>
                 </div>
             </div>`;
-        document.getElementById('adminBtn').onclick = () => { if(prompt("管理者パスワード") === ADMIN_PASS) { state.view = 'admin'; render(); } };
         document.getElementById('loginBtn').onclick = () => {
             const u = state.users.find(x => x.id === document.getElementById('uID').value && x.pass === document.getElementById('uPW').value);
             if(u) { state.currentUser = u; state.view = 'home'; render(); } else { alert("ログイン失敗"); }
@@ -2086,18 +2086,15 @@ window.render = function() {
         root.innerHTML = `
             <div class="p-8 h-full flex flex-col">
                 <div class="flex justify-between items-end mb-12">
-                    <div><p class="text-[10px] text-slate-400 font-bold uppercase">Student</p><h2 class="text-3xl font-black text-slate-800">${state.currentUser.id}</h2></div>
+                    <div><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Student</p><h2 class="text-3xl font-black text-slate-800">${state.currentUser.id}</h2></div>
                     <button onclick="location.reload()" class="w-10 h-10 bg-white rounded-full text-red-400 font-bold shadow-sm">✕</button>
                 </div>
                 <div class="flex-1 space-y-4 overflow-y-auto scrollbar-hide">
-                    <button id="navBasic" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase">Stage 01</span><span class="text-xl font-bold text-slate-700">Basic (100語単位)</span></button>
-                    <button id="navStandard" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase">Stage 02</span><span class="text-xl font-bold text-slate-700">Standard (400語単位)</span></button>
-                    <button id="navMaster" class="w-full py-12 btn-primary rounded-[2.5rem] text-center shadow-lg text-2xl font-black">Master Mode</button>
+                    <button onclick="state.quizType='Basic'; state.view='range'; render();" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 01</span><span class="text-xl font-bold text-slate-700">Basic (100語単位)</span></button>
+                    <button onclick="state.quizType='Standard'; state.view='range'; render();" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 02</span><span class="text-xl font-bold text-slate-700">Standard (400語単位)</span></button>
+                    <button onclick="state.quizType='Master'; state.view='range'; render();" class="w-full py-12 btn-primary rounded-[2.5rem] text-center shadow-lg text-2xl font-black">Master Mode</button>
                 </div>
             </div>`;
-        document.getElementById('navBasic').onclick = () => { state.quizType='Basic'; state.view='range'; render(); };
-        document.getElementById('navStandard').onclick = () => { state.quizType='Standard'; state.view='range'; render(); };
-        document.getElementById('navMaster').onclick = () => { state.quizType='Master'; state.view='range'; render(); };
     }
 
     else if (state.view === 'range') {
@@ -2121,81 +2118,6 @@ window.render = function() {
 
     else if (state.view === 'admin') {
         root.innerHTML = `<div class="p-8 h-full flex flex-col">
-            <h2 class="text-2xl font-bold mb-6 text-slate-800 tracking-tight">管理者設定</h2>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">管理者画面</h2>
             <div class="flex-1 overflow-auto bg-white rounded-2xl p-4 shadow-inner mb-6 scrollbar-hide">
                 ${state.users.map(u => `<div class="flex justify-between p-3 border-b text-sm font-bold"><span>${u.id}</span><span class="text-sky-500">${u.progress}pt</span></div>`).join('')}
-            </div>
-            <button onclick="state.view='login'; render();" class="py-5 text-slate-400 font-bold uppercase tracking-widest text-xs">ログイン画面に戻る</button>
-        </div>`;
-    }
-};
-
-window.startQuiz = (min, max) => {
-    let pool = wordData.filter(w => w.id >= min && w.id <= max);
-    if(pool.length === 0) { alert("データがありません"); return; }
-    let qs = [];
-    const tempPool = [...pool];
-    for(let i=0; i<Math.min(tempPool.length, 20); i++){
-        const t = tempPool.splice(Math.floor(Math.random()*tempPool.length), 1)[0];
-        let cs = [t.ja]; // 正解（日本語）
-        while(cs.length < 4){ 
-            let r = wordData[Math.floor(Math.random()*wordData.length)].ja; 
-            if(!cs.includes(r)) cs.push(r); 
-        }
-        qs.push({ id: t.id, en: t.en, ja: t.ja, choices: cs.sort(() => Math.random() - 0.5) });
-    }
-    state.quiz = { questions: qs, curr: 0, score: 0 };
-    renderQuiz();
-};
-
-function renderQuiz() {
-    const root = document.getElementById('app');
-    const q = state.quiz.questions[state.quiz.curr];
-    const prog = ((state.quiz.curr + 1) / 20) * 100;
-    root.innerHTML = `
-        <div class="h-full flex flex-col p-6">
-            <div class="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden"><div class="h-full bg-sky-400 transition-all duration-300" style="width: ${prog}%"></div></div>
-            <div class="flex-1 flex flex-col justify-center items-center text-center px-4">
-                <span class="text-[10px] font-bold text-sky-300 mb-2 uppercase tracking-widest">Question ${state.quiz.curr + 1} / No.${q.id}</span>
-                <h2 class="text-5xl font-black text-slate-800 leading-tight break-words w-full">${q.en}</h2>
-            </div>
-            <div class="grid gap-3 mb-10">
-                ${q.choices.map((c, i) => `<button id="c-${i}" onclick="checkAns(${i})" class="choice-btn shadow-sm">${c}</button>`).join('')}
-            </div>
-        </div>`;
-}
-
-window.checkAns = async (idx) => {
-    const q = state.quiz.questions[state.quiz.curr];
-    const ok = (q.choices[idx] === q.ja);
-    if(ok) { 
-        state.quiz.score++; 
-        if(state.quizType === 'Master') { 
-            state.currentUser.progress++; 
-            await setDoc(doc(db, "users", state.currentUser.id), state.currentUser); 
-        } 
-    }
-    
-    document.getElementById(`c-${idx}`).classList.add(ok?'ans-correct':'ans-wrong');
-    if(!ok) q.choices.forEach((c, i) => { if(c === q.ja) document.getElementById(`c-${i}`).classList.add('ans-correct'); });
-
-    setTimeout(() => {
-        if(state.quiz.curr < state.quiz.questions.length - 1) {
-            state.quiz.curr++; renderQuiz();
-        } else {
-            document.getElementById('app').innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center p-8">
-                    <div class="glass-card w-full p-12 text-center shadow-2xl">
-                        <h2 class="text-xs font-bold text-sky-400 mb-2 uppercase tracking-widest">Finish!</h2>
-                        <div class="text-8xl font-black text-slate-800 mb-12">${state.quiz.score}<span class="text-2xl text-slate-200">/20</span></div>
-                        <button onclick="goHome()" class="w-full py-5 btn-primary rounded-2xl font-black shadow-lg">ホームに戻る</button>
-                    </div>
-                </div>`;
-        }
-    }, 600);
-};
-
-fetchUsers();
-</script>
-</body>
-</html>
