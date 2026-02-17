@@ -2037,21 +2037,18 @@ window.wordData = [
 {id:1998, en:"tender", ja:"やさしい"},
 {id:1999, en:"outraged", ja:"憤慨している"},
 {id:2000, en:"intrinsic", ja:"本来の"},
-
 ];
 
 const ADMIN_PASS = "Henly0402";
 let state = { view: 'login', currentUser: null, users: [], quiz: null, quizType: null };
 const root = document.getElementById('app');
 
-// 画面遷移
 window.nav = (v, type = null) => {
     state.view = v;
     if (type) state.quizType = type;
     render();
 };
 
-// ログイン・管理
 window.adminLogin = () => {
     const p = prompt("管理者パスワード");
     if (p === ADMIN_PASS) window.nav('admin');
@@ -2065,7 +2062,6 @@ window.login = () => {
     else { alert("IDまたはPassが違います"); }
 };
 
-// 【重要】ユーザー追加
 window.addUser = async () => {
     const id = document.getElementById('newID').value;
     const pw = document.getElementById('newPW').value;
@@ -2074,11 +2070,11 @@ window.addUser = async () => {
     const newUser = { id: id, pass: pw, progress: 0 };
     try {
         await setDoc(doc(db, "users", id), newUser);
-        state.users.push(newUser); // ローカルの状態も更新
+        state.users.push(newUser);
         alert("ユーザー「" + id + "」を登録しました");
-        render(); // 再描画
+        render();
     } catch (e) {
-        alert("保存に失敗しました。Firebaseの設定を確認してください。");
+        alert("保存に失敗しました。");
     }
 };
 
@@ -2122,7 +2118,7 @@ window.checkAns = async (idx) => {
         if (q.opts[i] === q.ja) b.classList.add('ans-correct');
     });
     setTimeout(() => {
-        if (state.quiz.curr < 19 && state.quiz.curr < state.quiz.questions.length - 1) {
+        if (state.quiz.curr < state.quiz.questions.length - 1) {
             state.quiz.curr++; render();
         } else { window.nav('result'); }
     }, 800);
@@ -2130,10 +2126,10 @@ window.checkAns = async (idx) => {
 
 function render() {
     if (state.view === 'login') {
-        root.innerHTML = `<div class="h-full flex flex-col justify-center p-8"><div class="glass-card p-10 relative text-center"><button onclick="window.adminLogin()" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-4 py-1 rounded-full">ADMIN</button><h1 class="text-4xl font-black text-sky-500 mb-8 mt-4">SISTAN</h1><div class="space-y-4"><input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none"><input id="uPW" type="password" placeholder="Pass" class="w-full p-4 bg-slate-50 rounded-2xl outline-none"><button onclick="window.login()" class="w-full py-4 btn-primary rounded-2xl">ログイン</button></div></div></div>`;
+        root.innerHTML = `<div class="h-full flex flex-col justify-center p-8"><div class="glass-card p-10 relative text-center"><button onclick="window.adminLogin()" class="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-300 border border-slate-100 px-4 py-1 rounded-full uppercase">Admin</button><h1 class="text-4xl font-black text-sky-500 mb-8 mt-4 uppercase">SISTAN</h1><div class="space-y-4"><input id="uID" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none"><input id="uPW" type="password" placeholder="Pass" class="w-full p-4 bg-slate-50 rounded-2xl outline-none"><button onclick="window.login()" class="w-full py-4 btn-primary rounded-2xl">ログイン</button></div></div></div>`;
     } 
     else if (state.view === 'home') {
-        root.innerHTML = `<div class="p-8 h-full flex flex-col"><div class="flex justify-between items-end mb-10"><div><p class="text-[10px] text-slate-400 font-bold uppercase">Student</p><h2 class="text-3xl font-black text-slate-800">${state.currentUser.id}</h2></div><button onclick="location.reload()" class="w-10 h-10 bg-white rounded-full text-red-400 font-bold flex items-center justify-center shadow-sm">✕</button></div><div class="flex-1 space-y-4 overflow-y-auto scrollbar-hide"><button onclick="window.nav('range', 'Basic')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase">Stage 01</span><span class="text-xl font-bold">Basic</span></button><button onclick="window.nav('range', 'Standard')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase">Stage 02</span><span class="text-xl font-bold">Standard</span></button><button onclick="window.nav('range', 'Master')" class="w-full py-12 btn-primary rounded-[2.5rem] text-2xl font-black shadow-xl">MASTER MODE</button></div></div>`;
+        root.innerHTML = `<div class="p-8 h-full flex flex-col"><div class="flex justify-between items-end mb-10"><div><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Student</p><h2 class="text-3xl font-black text-slate-800">${state.currentUser.id}</h2></div><button onclick="location.reload()" class="w-10 h-10 bg-white rounded-full text-red-400 font-bold flex items-center justify-center shadow-sm">✕</button></div><div class="flex-1 space-y-4 overflow-y-auto scrollbar-hide"><button onclick="window.nav('range', 'Basic')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 01</span><span class="text-xl font-bold">Basic</span></button><button onclick="window.nav('range', 'Standard')" class="w-full py-8 glass-card text-left px-8"><span class="block text-[10px] text-sky-400 font-bold mb-1 uppercase tracking-widest">Stage 02</span><span class="text-xl font-bold">Standard</span></button><button onclick="window.nav('range', 'Master')" class="w-full py-12 btn-primary rounded-[2.5rem] text-2xl font-black shadow-xl">MASTER MODE</button></div></div>`;
     } 
     else if (state.view === 'range') {
         if (state.quizType === 'Master') {
@@ -2147,42 +2143,29 @@ function render() {
     } 
     else if (state.view === 'quiz') {
         const q = state.quiz.questions[state.quiz.curr];
-        root.innerHTML = `<div class="h-full flex flex-col p-6"><div class="w-full h-1 bg-slate-100 rounded-full mt-4"><div class="h-full bg-sky-400" style="width:${(state.quiz.curr+1)*5}%"></div></div><div class="flex-1 flex flex-col justify-center items-center text-center"><span class="text-[10px] font-bold text-sky-300 uppercase">No.${q.id}</span><h2 class="text-5xl font-black text-slate-800 uppercase">${q.en}</h2></div><div class="grid gap-3 mb-10">${q.opts.map((o, i) => `<button onclick="window.checkAns(${i})" class="choice-btn shadow-sm">${o}</button>`).join('')}</div></div>`;
+        root.innerHTML = `<div class="h-full flex flex-col p-6"><div class="w-full h-1 bg-slate-100 rounded-full mt-4"><div class="h-full bg-sky-400" style="width:${(state.quiz.curr+1)*5}%"></div></div><div class="flex-1 flex flex-col justify-center items-center text-center px-4"><span class="text-[10px] font-bold text-sky-300 uppercase">No.${q.id}</span><h2 class="text-5xl font-black text-slate-800 leading-tight">${q.en}</h2></div><div class="grid gap-3 mb-10">${q.opts.map((o, i) => `<button onclick="window.checkAns(${i})" class="choice-btn shadow-sm">${o}</button>`).join('')}</div></div>`;
     } 
     else if (state.view === 'result') {
         root.innerHTML = `<div class="h-full flex flex-col items-center justify-center p-8"><div class="glass-card w-full p-12 text-center shadow-2xl"><h2 class="text-xs font-bold text-sky-400 mb-2 uppercase">Score</h2><div class="text-8xl font-black text-slate-800 mb-12">${state.quiz.score}<span class="text-2xl text-slate-200">/20</span></div><button onclick="window.nav('home')" class="w-full py-5 btn-primary rounded-2xl font-black">完了</button></div></div>`;
     } 
     else if (state.view === 'admin') {
-        // --- ここが修正された管理者画面 ---
         root.innerHTML = `
         <div class="p-8 h-full flex flex-col overflow-hidden">
             <h2 class="text-2xl font-bold mb-6 text-slate-800">管理者画面</h2>
-            
             <div class="glass-card p-5 mb-6 space-y-3 bg-white shadow-sm border border-slate-100">
                 <p class="text-[10px] font-bold text-sky-400 uppercase tracking-widest">新規ユーザー登録</p>
                 <div class="flex gap-2">
-                    <input id="newID" type="text" placeholder="ID" class="flex-1 p-3 text-sm bg-slate-50 rounded-xl outline-none border border-transparent focus:border-sky-200">
-                    <input id="newPW" type="text" placeholder="Pass" class="flex-1 p-3 text-sm bg-slate-50 rounded-xl outline-none border border-transparent focus:border-sky-200">
+                    <input id="newID" type="text" placeholder="ID" class="flex-1 p-3 text-sm bg-slate-50 rounded-xl outline-none">
+                    <input id="newPW" type="text" placeholder="Pass" class="flex-1 p-3 text-sm bg-slate-50 rounded-xl outline-none">
                 </div>
                 <button onclick="window.addUser()" class="w-full py-3 btn-primary rounded-xl text-sm shadow-md shadow-sky-100">ユーザーを追加</button>
             </div>
-
             <div class="flex-1 overflow-auto bg-white rounded-[2rem] p-4 shadow-inner mb-6 scrollbar-hide">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2">登録済み生徒一覧</p>
                 <div class="space-y-1">
-                    ${state.users.map(u => `
-                        <div class="flex justify-between items-center p-4 rounded-2xl hover:bg-slate-50 transition-colors">
-                            <div>
-                                <p class="font-black text-slate-700">${u.id}</p>
-                                <p class="text-[10px] text-slate-300 font-mono italic">Password: ${u.pass}</p>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-sky-500 font-black text-lg">${u.progress}</span><span class="text-[10px] text-sky-300 ml-1">pt</span>
-                            </div>
-                        </div>`).join('')}
+                    ${state.users.map(u => `<div class="flex justify-between items-center p-4 rounded-2xl hover:bg-slate-50 transition-colors"><div><p class="font-black text-slate-700">${u.id}</p><p class="text-[10px] text-slate-300 font-mono italic">Password: ${u.pass}</p></div><div class="text-right"><span class="text-sky-500 font-black text-lg">${u.progress}</span><span class="text-[10px] text-sky-300 ml-1">pt</span></div></div>`).join('')}
                 </div>
             </div>
-            
             <button onclick="window.nav('login')" class="py-2 text-slate-400 font-bold text-xs uppercase text-center">ログアウト</button>
         </div>`;
     }
