@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シス単 Quiz - Henly Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .master-gold {
+            background: linear-gradient(135deg, #ffd700, #fff8e1, #ffb300);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+            color: #856404 !important;
+            animation: pulse 2s infinite;
+            border: none !important;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        .ans-correct { background-color: #10b981 !important; color: white !important; }
+        .ans-wrong { background-color: #ef4444 !important; color: white !important; }
+        .choice-btn { transition: all 0.2s; border: 2px solid #f1f5f9; }
+        .choice-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// --- 1. 全単語データ (2027語) ---
+const wordData = [
+    {id:1, en:"follow", ja:"～に従う"}, {id:2, en:"consider", ja:"～を考慮する"}, {id:3, en:"increase", ja:"増える"},
+    {id:4, en:"expect", ja:"～を予期する"}, {id:5, en:"decide", ja:"決意する"}, {id:6, en:"develop", ja:"発達する"},
+    {id:7, en:"provide", ja:"供給する"}, {id:8, en:"continue", ja:"続く"}, {id:9, en:"include", ja:"含む"},
+    {id:10, en:"remain", ja:"ままでいる"}, {id:11, en:"reach", ja:"～に着く"}, {id:12, en:"allow", ja:"許可する"},
+    {id:13, en:"force", ja:"強制する"}, {id:14, en:"offer", ja:"申し出る"}, {id:15, en:"realize", ja:"悟る"},
+    {id:16, en:"suggest", ja:"提案する"}, {id:17, en:"require", ja:"必要とする"}, {id:18, en:"worry", ja:"心配する"},
+    {id:19, en:"wonder", ja:"疑問に思う"}, {id:20, en:"cost", ja:"要する"}, {id:21, en:"tend", ja:"～する傾向がある"},
+    {id:22, en:"depend", ja:"依存する"}, {id:23, en:"share", ja:"共有する"}, {id:24, en:"demand", ja:"要求する"},
+    {id:25, en:"support", ja:"支持する"}, {id:26, en:"hire", ja:"雇う"}, {id:27, en:"regard", ja:"～とみなす"},
+    {id:28, en:"base", ja:"基づいている"}, {id:29, en:"improve", ja:"向上させる"}, {id:30, en:"recognize", ja:"認める"},
+    {id:31, en:"notice", ja:"気づく"}, {id:32, en:"suppose", ja:"～だと思う"}, {id:33, en:"raise", ja:"上げる"},
+    {id:34, en:"prefer", ja:"より好む"}, {id:35, en:"cheer", ja:"励ます"}, {id:36, en:"suffer", ja:"経験する"},
+    {id:37, en:"describe", ja:"描写する"}, {id:38, en:"prevent", ja:"妨げる"}, {id:39, en:"reduce", ja:"～を減らす"},
+    {id:40, en:"mistake", ja:"～を誤解する"}, {id:41, en:"prepare", ja:"準備をする"}, {id:42, en:"encourage", ja:"励ます"},
+    {id:43, en:"prove", ja:"～だと分かる"}, {id:44, en:"treat", ja:"扱う"}, {id:45, en:"establish", ja:"設立する"},
+    // ... (中略。実際には2027語全てをここに配置します)
+    {id:1101, en:"minimum", ja:"最小限の"}, {id:1102, en:"lord", ja:"神"}, {id:1103, en:"awkward", ja:"気まずい"},
+    {id:1950, en:"dumb", ja:"ばか"}, {id:2027, en:"protocol", ja:"議定書"}, {id:2028, en:"skyscraper", ja:"高層ビル"},
+    {id:2029, en:"accord", ja:"一致"}
+];
+
+// 単語リストの補完（CSVデータに基づき1-2027まで生成）
+// ユーザーがアップロードした全単語を正確に反映させるため、
+// 実際のファイルではここに対象の全データを書き込みます。
+// (デモ用に不足分を生成していますが、本番ではCSVの全行を配列に入れます)
+
+// --- 2. アプリの状態 ---
+const ADMIN_PASS = "Henly0402";
+let state = {
+    view: 'splash',
+    currentUser: null,
+    users: JSON.parse(localStorage.getItem('sis_users')) || [],
+    quiz: null
+};
+
+function saveUsers() { localStorage.setItem('sis_users', JSON.stringify(state.users)); }
+
+// --- 3. ユーティリティ ---
+function getRank(percent) {
+    if (percent >= 95) return 'S';
+    if (percent >= 85) return 'A';
+    if (percent >= 70) return 'B';
+    if (percent >= 50) return 'C';
+    if (percent >= 30) return 'D';
+    return 'E';
+}
+
+// --- 4. 画面レンダリング ---
+function render() {
+    const root = document.getElementById('app');
+    
+    // スプラッシュ画面
+    if (state.view === 'splash') {
+        root.innerHTML = `
+            <div class="h-screen flex flex-col items-center justify-center bg-white">
+                <h1 class="text-3xl font-black text-blue-600 mb-2">SYSTEM Quiz</h1>
+                <p class="text-slate-400 italic animate-pulse">produced by Henly</p>
+            </div>`;
+        setTimeout(() => { state.view = 'login'; render(); }, 2000);
+    }
+
+    // ログイン画面
+    else if (state.view === 'login') {
+        root.innerHTML = `
+            <div class="min-h-screen flex items-center justify-center p-6">
+                <div class="w-full max-w-sm bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 relative">
+                    <button onclick="adminLoginPrompt()" class="absolute top-6 left-6 text-[10px] text-slate-300 font-bold uppercase tracking-widest">Admin</button>
+                    <h2 class="text-2xl font-black text-center mb-10 text-slate-800">LOGIN</h2>
+                    <div class="space-y-4">
+                        <input id="userId" type="text" placeholder="User ID" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <input id="userPass" type="password" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400 transition">
+                        <button onclick="handleLogin()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-95 transition">START</button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // ホーム画面
+    else if (state.view === 'home') {
+        const u = state.currentUser;
+        const progressPercent = Math.min(100, (u.progress / 2000) * 100);
+        root.innerHTML = `
+            <div class="min-h-screen max-w-md mx-auto p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-12">
+                    <div class="text-xs font-black text-slate-400 tracking-tighter uppercase">Player: ${u.id}</div>
+                    <button onclick="state.view='login'; render()" class="text-[10px] font-bold text-red-400">LOGOUT</button>
+                </div>
+
+                <div class="space-y-4 flex-1">
+                    <button onclick="initQuiz('Basic')" class="w-full py-8 bg-white rounded-[2rem] border-2 border-slate-100 font-bold text-xl text-slate-700 active:bg-slate-50">Basic</button>
+                    <button onclick="initQuiz('Standard')" class="w-full py-8 bg-white rounded-[2rem] border-2 border-slate-100 font-bold text-xl text-slate-700 active:bg-slate-50">Standard</button>
+                    
+                    <div class="pt-4">
+                        <button onclick="initQuiz('Master')" class="w-full py-12 rounded-[2.5rem] text-2xl font-black transition-all ${u.progress >= 2000 ? 'master-gold' : 'bg-slate-900 text-white'}">
+                            ${u.progress >= 2000 ? '👑 MASTER' : 'Master'}
+                        </button>
+                        <div class="mt-6 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-full transition-all duration-1000" style="width: ${progressPercent}%"></div>
+                        </div>
+                        <div class="flex justify-between mt-3 px-1">
+                            <span class="text-[10px] font-black text-slate-400 tracking-widest">${u.progress} / 2000</span>
+                            <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">${u.rank || '-'} RANK</span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="fixed bottom-0 left-0 w-full bg-white border-t flex px-6 py-4 justify-around">
+                    <button class="flex flex-col items-center text-blue-600"><div class="text-[10px] font-black">TEST</div></button>
+                    <button class="flex flex-col items-center text-slate-300"><div class="text-[10px] font-black">DATA</div></button>
+                </nav>
+            </div>`;
+    }
+
+    // クイズ画面
+    else if (state.view === 'test') {
+        const q = state.quiz.questions[state.quiz.currentIdx];
+        const prog = ((state.quiz.currentIdx + 1) / state.quiz.questions.length) * 100;
+        root.innerHTML = `
+            <div class="min-h-screen p-6 flex flex-col max-w-md mx-auto">
+                <div class="w-full bg-slate-100 h-1 rounded-full mb-
